@@ -7,6 +7,8 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using dcinc.api.entities;
+using FluentValidation;
 
 namespace dcinc.api
 {
@@ -22,51 +24,56 @@ namespace dcinc.api
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
+            string message = string.Empty;
 
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
-
-            switch (req.Method)
+            // メソッドにより取得処理と登録処理を切り替える。
+            try
             {
-                case "GET":
-                    log.LogInformation("GET webMeetings");
-                    break;
-                case "POST":
-                    log.LogInformation("POST webMeetings");
+                switch (req.Method)
+                {
+                    case "GET":
+                        log.LogInformation("GET webMeetings");
+                        break;
+                    case "POST":
+                        log.LogInformation("POST webMeetings");
 
-                    await AddWebMeeting(documentsOut, data);
-                    break;
-                default:
-                    throw new InvalidOperationException($"Invalid method: method={req.Method}");
+                        // リクエストのBODYからパラメータ取得
+                        string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                        dynamic data = JsonConvert.DeserializeObject(requestBody);
+                        
+                        WebMeeting webMeeting = new WebMeeting();
+                        webMeeting.Name = data?.name;
+                        webMeeting.StartDateTime = data?.startDateTime;
+                        webMeeting.Url = data?.url;
+                        webMeeting.RegisteredAt = data?.registeredAt;
+                        webMeeting.SlackChannelId = data?.slackChannelId;
+
+                        WebMeetingValidator validator = new WebMeetingValidator();
+                        validator.ValidateAndThrow(webMeeting);
+
+                        // Web会議情報を登録
+                        message = await AddWebMeetings(documentsOut, webMeeting);
+
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Invalid method: method={req.Method}");
+                }
+            }
+            catch (Exception ex)
+            {
+                return new OkObjectResult(ex.Message);
             }
 
-            string responseMessage = "OK";
-            // string responseMessage = string.IsNullOrEmpty(name)
-            //     ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
-            //     : $"Hello, {name}. This HTTP triggered function executed successfully.";
-
-            return new OkObjectResult(responseMessage);
+            return new OkObjectResult($"This HTTP triggered function executed successfully.\n{message}");
         }
 
-        private static async Task AddWebMeeting(
-            [CosmosDB(
-                databaseName: "meeting-info-db",
-                collectionName: "WebMeetings",
-                ConnectionStringSetting = "CosmosDbConnectionString")]IAsyncCollector<dynamic> documentsOut,
-            dynamic data)
+        private static async Task<string> AddWebMeetings(
+            IAsyncCollector<dynamic> documentsOut,
+            WebMeeting webMeeting
+            )
         {
-
-            // if (!string.IsNullOrEmpty(data?.name))
-            // {
-                // Add a JSON document to the output container.
-                await documentsOut.AddAsync(new
-                {
-                    // create a random ID
-                    id = System.Guid.NewGuid().ToString(),
-                    date = data?.name
-                });
-            // }
-
+            await documentsOut.AddAsync(webMeeting);
+            return JsonConvert.SerializeObject(webMeeting);
         }
     }
 }
