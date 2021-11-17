@@ -7,60 +7,60 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using dcinc.api.entities;
 using FluentValidation;
-using Newtonsoft.Json.Serialization;
+
 namespace dcinc.api
 {
-    public static class webMeetings
+    public static class SlackChannels
     {
-        [FunctionName("webMeetings")]
+        [FunctionName("SlackChannels")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
             [CosmosDB(
                 databaseName: "meeting-info-db",
-                collectionName: "WebMeetings",
+                collectionName: "SlackChannels",
                 ConnectionStringSetting = "CosmosDbConnectionString")]IAsyncCollector<dynamic> documentsOut,
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
             string message = string.Empty;
 
-            // メソッドにより取得処理と登録処理を切り替える。
-            try
-            {
+            try {
+
+                // メソッドにより取得処理と登録処理を切り替える。
                 switch (req.Method)
                 {
                     case "GET":
-                        log.LogInformation("GET webMeetings");
+                        log.LogInformation("GET SlackChannels");
                         break;
                     case "POST":
-                        log.LogInformation("POST webMeetings");
+                        log.LogInformation("POST SlackChannels");
 
                         // リクエストのBODYからパラメータ取得
                         string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
                         dynamic data = JsonConvert.DeserializeObject(requestBody);
-                        
-                        WebMeeting webMeeting = new WebMeeting();
-                        webMeeting.Name = data?.name;
-                        webMeeting.StartDateTime = data?.startDateTime ?? DateTime.UnixEpoch;
-                        webMeeting.Url = data?.url;
-                        webMeeting.RegisteredBy = data?.registeredBy;
-                        webMeeting.SlackChannelId = data?.slackChannelId;
 
-                        WebMeetingValidator validator = new WebMeetingValidator();
-                        validator.ValidateAndThrow(webMeeting);
+                        // エンティティに設定
+                        SlackChannel slackChannel = new SlackChannel();
+                        slackChannel.Name = data?.name;
+                        slackChannel.WebhookUrl = data?.webhookUrl;
+                        slackChannel.RegisteredBy = data?.registeredBy;
 
-                        // Web会議情報を登録
-                        message = await AddWebMeetings(documentsOut, webMeeting);
+                        // 入力値チェックを行う
+                        SlackChannelValidator validator = new SlackChannelValidator();
+                        validator.ValidateAndThrow(slackChannel);
 
+                        // Slackチャンネル情報を登録
+                        message = await AddSlackChannels(documentsOut, slackChannel);
+        
                         break;
                     default:
                         throw new InvalidOperationException($"Invalid method: method={req.Method}");
                 }
             }
-            catch (Exception ex)
-            {
+            catch(Exception ex) {
                 return new BadRequestObjectResult(ex);
             }
 
@@ -68,19 +68,19 @@ namespace dcinc.api
         }
 
         /// <summary>
-        /// Web会議情報を登録する。
+        /// Slackチャンネル情報を登録する。
         /// </summary>
         /// <param name="documentsOut">CosmosDBのドキュメント</param>
-        /// <param name="webMeeting">Web会議情報</param>
+        /// <param name="slackChannel">Slackチャンネル情報</param>
         /// <returns></returns>
-        private static async Task<string> AddWebMeetings(
+        private static async Task<string> AddSlackChannels(
                     IAsyncCollector<dynamic> documentsOut,
-                    WebMeeting webMeeting
+                    SlackChannel slackChannel
                     ) {
             // 登録日時にUTCでの現在日時を設定
-            webMeeting.RegisteredAt = DateTime.UtcNow;
+            slackChannel.RegisteredAt = DateTime.UtcNow;
             // Add a JSON document to the output container.
-            string documentItem = JsonConvert.SerializeObject(webMeeting, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+            string documentItem = JsonConvert.SerializeObject(slackChannel, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
             await documentsOut.AddAsync(documentItem);
             return documentItem;
         }
