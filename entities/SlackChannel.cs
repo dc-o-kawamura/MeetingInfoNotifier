@@ -16,6 +16,7 @@ namespace dcinc.api.entities
             Id = Guid.NewGuid().ToString();
         }
 
+        #region プロパティ
         /// <summary>
         /// 一意とするID
         /// </summary>
@@ -41,5 +42,7 @@ namespace dcinc.api.entities
         /// </summary>
         [JsonProperty("registeredAt")]
         public DateTime RegisteredAt { get; set; }
+
+        #endregion
     }
 }

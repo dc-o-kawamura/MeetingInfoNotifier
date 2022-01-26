@@ -16,6 +16,7 @@ namespace dcinc.api.entities
             Id = Guid.NewGuid().ToString();
         }
 
+        #region プロパティ
         /// <summary>
         /// 一意とするID
         /// </summary>
@@ -57,5 +58,13 @@ namespace dcinc.api.entities
         /// </summary>
         [JsonProperty("slackChannelId")]
         public string SlackChannelId { get; set; }
+
+        /// <summary>
+        /// Web会議の日付（Unix 時刻（秒））
+        /// </summary>
+        /// <returns>1970-01-01T00:00:00Z からの経過時間（秒）</returns>
+        [JsonIgnore]
+        public long DateUnixTimeSeconds => new DateTimeOffset(Date).ToUnixTimeSeconds();
+        #endregion
     }
 }

@@ -1,5 +1,7 @@
 using System;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Collections.Generic;
 using LinqKit;
 using dcinc.api.entities;
 
@@ -19,6 +21,15 @@ namespace dcinc.api.queries
         #endregion
 
         #region プロパティ
+        /// <summary>
+        /// 一意とするID一覧（カンマ区切り）
+        /// </summary>
+        public string Ids { get; set; }
+        /// <summary>
+        /// 一意とするID一覧
+        /// </summary>
+        public IEnumerable<string> IdValues { get => Ids.Split(",").Select(id => id.Trim()); }
+
         /// <summary>
         /// Web会議の日付範囲の開始日（ISO8601形式の文字列）
         /// </summary>
@@ -69,6 +80,15 @@ namespace dcinc.api.queries
         /// 通知先のSlackチャンネル
         /// </summary>
         public string SlackChannelId { get; set; }
+
+        /// <summary>
+        /// Id一覧が指定されているか
+        /// </summary>
+        public bool HasIds {
+            get {
+                return (!string.IsNullOrEmpty(Ids) && Ids.Split(",").Any());
+            }
+        }
 
         /// <summary>
         /// Web会議の日付範囲の開始日が指定されているか
@@ -152,6 +172,10 @@ namespace dcinc.api.queries
             if (this.HasToDate)
             {
                 expr = expr.And(w => w.Date <= this.ToDateUtcValue);
+            }
+            if (this.HasIds)
+            {
+                expr = expr.And(s => this.IdValues.Contains(s.Id));
             }
             if (expr == original)
             {
