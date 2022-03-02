@@ -29,7 +29,7 @@ namespace dcinc.jobs
 
         // 参考：https://docs.microsoft.com/ja-jp/azure/azure-functions/functions-bindings-timer?tabs=csharp#ncrontab-expressions
         // RELEASE："0 30 7 * * 1-5"
-        // DEBUG："0 */5 * * * *"
+        // DEBUG："0 */1 * * * *"
         // アプリケーション設定：WEBSITE_TIME_ZONE=Tokyo Standard Time
         [FunctionName("NotifySlack")]
         public async Task Run([TimerTrigger("0 30 7 * * 1-5")]TimerInfo myTimer,
