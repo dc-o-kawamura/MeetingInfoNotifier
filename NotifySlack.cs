@@ -24,7 +24,7 @@ namespace dcinc.jobs
 
         public NotifySlack(IHttpClientFactory httpClientFactory)
         {
-            _httpClient = httpClientFactory.CreateClient();
+            _httpClient = httpClientFactory.CreateClient("RetryHttpClient");
         }
 
         // 参考：https://docs.microsoft.com/ja-jp/azure/azure-functions/functions-bindings-timer?tabs=csharp#ncrontab-expressions
@@ -40,7 +40,7 @@ namespace dcinc.jobs
                 ]DocumentClient client, ILogger log)
         {
             // 現在日のWeb会議情報を取得する
-            var today = DateTime.UtcNow.Date.ToString("yyy-MM-dd");
+            var today = DateTime.Now.Date.ToString("yyyy-MM-dd");
             var webMeetingsParam = new WebMeetingsQueryParameter {
                 FromDate = today,
                 ToDate = today
