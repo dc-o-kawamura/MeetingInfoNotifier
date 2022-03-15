@@ -41,6 +41,7 @@ namespace dcinc.jobs
         {
             // 現在日のWeb会議情報を取得する
             var today = DateTime.Now.Date.ToString("yyyy-MM-dd");
+//            var today = DateTime.Now.Date.AddDays(1).ToString("yyyy-MM-dd");  // For Debug
             var webMeetingsParam = new WebMeetingsQueryParameter {
                 FromDate = today,
                 ToDate = today
@@ -72,7 +73,8 @@ namespace dcinc.jobs
                 var message = new StringBuilder($"{DateTime.Today.ToString("yyyy/MM/dd")}のWeb会議情報\n");
                 foreach(var webMeeting in webMeetingsBySlackChannelMap[slackChannel.Id])
                 {
-                    message.AppendLine($"{webMeeting.StartDateTime.ToString("HH:mm")}～：{webMeeting.Name}\n\t{webMeeting.Url}");
+//                    message.AppendLine($"{webMeeting.StartDateTime.ToString("HH:mm")}～：{webMeeting.Name}\n\t{webMeeting.Url}");
+                    message.AppendLine($"{webMeeting.StartDateTime.ToString("HH:mm")}～：<{webMeeting.Url}|{webMeeting.Name}>");
                 }
                 log.LogInformation(slackChannel.WebhookUrl);
                 log.LogInformation(message.ToString());
